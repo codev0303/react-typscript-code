@@ -1,5 +1,7 @@
-import { FunctionComponent, useEffect, useState } from "react";
+import { FunctionComponent, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { Dispatch } from "redux";
 import UserCheckList from "../component/Checklist/Checklist";
 import H4 from "../component/H4/H4";
 import Loader from "../component/loader/loader";
@@ -8,45 +10,60 @@ import { HTTPTodos, HTTPUser } from "../constants/httpTypes";
 import routes from "../constants/routes";
 import { replaceDynamics } from "../helpers/url";
 import useHTTPGetRequest from "../hooks/use_get_request_hook";
+import { setError } from "../store/actions/errorAction";
 
 interface HomeProps {}
 
 const Home: FunctionComponent<HomeProps> = () => {
+  const dispatch: Dispatch<any> = useDispatch();
   const { userId = "1" } = useParams<{ userId: string }>();
   const [localUsers, setLocalUsers] = useState<HTTPUser[]>();
   const [localTodos, setLocalTodos] = useState<HTTPTodos[] | [] | null>();
   const [fetchTodos, setFetchTodos] = useState<boolean>(true);
+
+  const usersConfig = useMemo(
+    () => ({ reloadCondition: !localUsers }),
+    [localUsers]
+  );
+  const todosConfig = useMemo(
+    () => ({ reloadCondition: userId !== undefined && fetchTodos }),
+    [userId, fetchTodos]
+  );
+
   const users = useHTTPGetRequest<HTTPUser[]>(
     routes.users,
     "Users",
-    {},
-    { reloadCondition: !localUsers }
+    undefined,
+    usersConfig
   );
 
   const todos = useHTTPGetRequest<HTTPTodos[] | []>(
     replaceDynamics(routes.todos, { id: userId }),
     "Todos",
-    {},
-    { reloadCondition: userId !== undefined && fetchTodos }
+    undefined,
+    todosConfig
   );
 
   useEffect(() => {
     if (users && !users.loading) {
       if (Array.isArray(users.data) && !users.data.length) {
-        // eslint-disable-next-line no-throw-literal
-        throw "No users found";
+        dispatch(
+          setError({
+            title: "Error message",
+            body: "No users found",
+            showError: true,
+            type: "error",
+          })
+        );
+        return;
       }
       setLocalUsers(users.data);
     }
-    console.log(users);
-  }, [users]);
+  }, [users, dispatch]);
+
   useEffect(() => {
     if (todos && !todos.loading) {
-      if (Array.isArray(todos.data) && !todos.data.length) {
-        // eslint-disable-next-line no-throw-literal
-        throw "No todos found for this user. ";
-      }
-      setLocalTodos(todos.data);
+      setLocalTodos(todos.data ?? []);
       setFetchTodos(false);
     }
   }, [todos]);

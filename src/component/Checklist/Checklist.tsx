@@ -17,9 +17,9 @@ const UserCheckList: FunctionComponent<UserCheckListProps> = ({
       <H4 text="Task List" cssClass=" mb-6 " />
       {!todoItems && <p className="font-semibold ">No Todos found for this user...  </p>}
       {todoItems && !todoItems.length &&  <p className="font-semibold ">No Todos found for this user...  </p>}
-      {todoItems && (todoItems || [])?.map((item: HTTPTodos, idx: number) => {
+      {todoItems && (todoItems || [])?.map((item: HTTPTodos) => {
         return (
-          <Container key={`${item}-${idx}`} >
+          <Container key={`todo-${item.id}`} >
             {item?.title}
             <input
               type="checkbox"
@@ -33,7 +33,7 @@ const UserCheckList: FunctionComponent<UserCheckListProps> = ({
     </div>
   ) : (
     <div className="min-h-screen h-full flex items-center justify-center w-full">
-    <Loader message={"Loading checklist..."} showLoader={false}/>
+    <Loader message={"Loading checklist..."} showLoader={true}/>
     </div>
   );
 };

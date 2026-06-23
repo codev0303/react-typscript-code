@@ -1,57 +1,121 @@
 # Onboarding Tracker
-React Typescript app
 
-* [Technologies](#technologies)
-* [Getting Started without Docker](#getting-started-without-docker)
-* [Create React App](#create-react-app)
+A React + TypeScript app for browsing users and their onboarding task lists. Data is loaded from the [JSONPlaceholder](https://jsonplaceholder.typicode.com) API.
 
-## Technologies
+## Features
 
-- [Reactjs](https://reactjs.org/)
-- [Tailwind](https://tailwindcss.com/)
-- [Create React App](https://github.com/facebook/create-react-app)
+- User list with navigation to per-user task views
+- Todo checklist with completion status
+- Global error alerts via Redux
+- Error boundary for render-time failures
+- Responsive layout with Tailwind CSS
 
+## Tech Stack
 
-## Getting Started without Docker
-### Setup
-- run `yarn` to install dependencies
+| Layer | Tools |
+|-------|-------|
+| UI | React 18, TypeScript |
+| Build | [Vite](https://vitejs.dev/) |
+| Routing | React Router v6 |
+| State | Redux, Redux Thunk |
+| Styling | Tailwind CSS, styled-components |
+| HTTP | Axios |
 
-### Running Production  Server (Recommended)
-- Run `yarn run build` to generate assets
-- Run ` serve -s build` to start the development server
-- now access the server on your localhost and the port you provided i.e `localhost:5000 or 127.0.0.1:5000` or any available port generated after the build  
-### Running Development Server
-- Run `yarn run start` to start the development server
-- now access the server on your localhost and the port you provided i.e `localhost:3000 or 127.0.0.1:3000`
+## Prerequisites
 
+- [Node.js](https://nodejs.org/) 16 or later
+- [Yarn](https://yarnpkg.com/) (recommended) or npm
 
-## Create React App
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Getting Started
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Install dependencies
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+yarn
+```
 
-### Code Splitting
+### Development
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+```bash
+yarn dev
+```
 
-### Analyzing the Bundle Size
+Open [http://localhost:5173/](http://localhost:5173/) in your browser.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+### Production build
 
-### Making a Progressive Web App
+```bash
+yarn build
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+Output is written to the `dist/` folder.
 
-### Advanced Configuration
+### Preview production build locally
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+```bash
+yarn preview
+```
 
-### Deployment
+## Available Scripts
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+| Command | Description |
+|---------|-------------|
+| `yarn dev` | Start the Vite dev server |
+| `yarn build` | Type-check with TypeScript, then build for production |
+| `yarn preview` | Serve the production build locally |
 
-### `yarn build` fails to minify
+## Routes
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+| Path | Description |
+|------|-------------|
+| `/` | Home — users list and todos for user `1` (default) |
+| `/users/:userId` | Home — users list and todos for the selected user |
+| `*` | 404 page |
+
+## Project Structure
+
+```
+src/
+├── App.tsx                 # Router and app shell
+├── pages/
+│   └── Home.tsx            # Main page — users and todos
+├── component/
+│   ├── Alerts/             # Redux-driven error/info alerts
+│   ├── Checklist/          # Todo list UI
+│   ├── ErrorBoundary/      # Catches render errors
+│   ├── User/               # User list item with link
+│   └── loader/             # Loading spinner
+├── hooks/
+│   └── use_get_request_hook.ts   # Reusable GET request hook
+├── store/                  # Redux store, actions, reducers
+├── helpers/                # HTTP client and URL utilities
+└── constants/              # API routes and types
+```
+
+## API
+
+The app uses [JSONPlaceholder](https://jsonplaceholder.typicode.com) as a mock backend:
+
+- `GET /users` — list of users
+- `GET /users/:id/todos` — todos for a given user
+
+The Axios client is configured in `src/helpers/http.js`.
+
+## Deployment
+
+This project is set up for [GitHub Pages](https://pages.github.com/) at the `/users/` subpath.
+
+- `package.json` sets `homepage` to `https://jtad009.github.io/users`
+- `vite.config.ts` sets `base: '/users/'` for production builds
+- `BrowserRouter` uses `import.meta.env.BASE_URL` as its basename
+
+To deploy with [gh-pages](https://www.npmjs.com/package/gh-pages), add a deploy script to `package.json` and run:
+
+```bash
+yarn build
+npx gh-pages -d dist
+```
+
+## License
+
+No license specified.

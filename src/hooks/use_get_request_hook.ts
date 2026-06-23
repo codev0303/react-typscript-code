@@ -1,83 +1,100 @@
 import { AxiosError } from "axios";
-import {useEffect, useRef, useState} from "react";
-import {useDispatch} from "react-redux";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useDispatch } from "react-redux";
 import { Dispatch } from "redux";
 import http from "../helpers/http";
-// import { SHOW_SNACKBAR, showSnackbar} from "../../store/actions/core_action";
-import {updateQueryParams} from "../helpers/url";
-import {isTypeOf} from "../helpers/utility";
+import { updateQueryParams } from "../helpers/url";
 import { setError } from "../store/actions/errorAction";
 import { HookConfig, HookResponseShape } from "./type";
 
-
-
-const defaultErrorCallback = (error: AxiosError, type: string, dispatch: (arg: (object | (() => void))) => void) => {
+const defaultErrorCallback = (
+  error: AxiosError,
+  type: string,
+  dispatch: Dispatch<any>
+) => {
   if (!error?.response) {
-    dispatch(setError({
-      title: "Error message",
-      body:`Error PERFORMING ACTION`,
-      showError: true,
-      type: 'error'
-    }))
+    dispatch(
+      setError({
+        title: "Error message",
+        body: "Error PERFORMING ACTION",
+        showError: true,
+        type: "error",
+      })
+    );
   } else {
-    dispatch(setError({
-      title: "Error message",
-      body:`Error getting ${type}: ${error.message}`,
-      showError: true,
-      type: 'error'
-    }))
+    dispatch(
+      setError({
+        title: "Error message",
+        body: `Error getting ${type}: ${error.message}`,
+        showError: true,
+        type: "error",
+      })
+    );
   }
 };
 
-const useHTTPGetRequest =  <T>(route: string, type: string, params?: {}, config?: HookConfig<T>) => {
+const useHTTPGetRequest = <T>(
+  route: string,
+  type: string,
+  params?: Record<string, unknown>,
+  config?: HookConfig<T>
+) => {
   const mountedRef = useRef(true);
-  let c = config;
-
   const dispatch: Dispatch<any> = useDispatch();
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  if (params) {
-    route = updateQueryParams({route, params}).route;
-  }
-  if (c && !isTypeOf('Function', c?.errorCallBack)) {
-    c.errorCallBack = defaultErrorCallback;
-  }
+  const [loading, setLoading] = useState(false);
+
+  const resolvedRoute = useMemo(() => {
+    if (params && Object.keys(params).length) {
+      return updateQueryParams({ route, params }).route;
+    }
+    return route;
+  }, [route, params]);
+
+  const reloadCondition = config?.reloadCondition ?? false;
+  const errorCallBack = config?.errorCallBack ?? defaultErrorCallback;
+  const errorData = config?.errorData;
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
   }, []);
+
   useEffect(() => {
-    
-    if(c?.reloadCondition) {
-      setData(null);
-      setLoading(true);
-      http.get<T>(route).then(
-        (response) => {
-          if (!mountedRef.current) return null;
-          setData(response.data);
-          setLoading(false);
-        },
-        (error:AxiosError) => {
-         
-          if (!mountedRef.current) return null;
-          if(c?.errorCallBack && isTypeOf('Function', c?.errorCallBack)){
-            c?.errorCallBack(error,type, dispatch);
-            if(c.errorData){
-              setData(c?.errorData);
-            }
-            setLoading(false);
-          }
-         
-        }
-      );
+    if (!reloadCondition) {
+      return;
     }
-  }, [route, type, data, c?.reloadCondition, c?.errorCallBack, c?.errorData, c, dispatch ]);
+
+    setLoading(true);
+    let cancelled = false;
+
+    http.get<T>(resolvedRoute).then(
+      (response) => {
+        if (cancelled || !mountedRef.current) return;
+        setData(response.data);
+        setLoading(false);
+      },
+      (error: AxiosError) => {
+        if (cancelled || !mountedRef.current) return;
+        errorCallBack(error, type, dispatch);
+        if (errorData !== undefined) {
+          setData(errorData);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedRoute, type, reloadCondition, errorCallBack, errorData, dispatch]);
+
   const result: HookResponseShape<T> = {
     loading,
-    data: data as T
-  }
+    data: data as T,
+  };
   return result;
 };
 
